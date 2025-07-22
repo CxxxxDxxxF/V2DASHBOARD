@@ -1,0 +1,150 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  authId    String   @unique // Supabase Auth user ID
+  email     String   @unique
+  name      String?
+  role      UserRole @default(CONTENT_CREATOR)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  posts     Post[]
+  tasks     Task[]
+  approvals Approval[]
+
+  @@map("users")
+}
+
+model Post {
+  id          String      @id @default(cuid())
+  caption     String
+  imageUrl    String?
+  platforms   Platform[]
+  status      PostStatus  @default(DRAFT)
+  scheduledAt DateTime?
+  publishedAt DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Relations
+  authorId    String
+  author      User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  approvals   Approval[]
+  analytics   Analytics[]
+
+  @@map("posts")
+}
+
+model Approval {
+  id        String   @id @default(cuid())
+  status    ApprovalStatus
+  feedback  String?
+  createdAt DateTime @default(now())
+
+  // Relations
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  approverId String
+  approver  User     @relation(fields: [approverId], references: [id], onDelete: Cascade)
+
+  @@map("approvals")
+}
+
+model Task {
+  id          String     @id @default(cuid())
+  title       String
+  description String?
+  priority    Priority   @default(MEDIUM)
+  status      TaskStatus @default(TODO)
+  dueDate     DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  // Relations
+  userId      String
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("tasks")
+}
+
+model Analytics {
+  id        String   @id @default(cuid())
+  likes     Int      @default(0)
+  comments  Int      @default(0)
+  shares    Int      @default(0)
+  reach     Int      @default(0)
+  platform  Platform
+  createdAt DateTime @default(now())
+
+  // Relations
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@map("analytics")
+}
+
+model SocialAccount {
+  id           String   @id @default(cuid())
+  platform     Platform
+  accountName  String
+  accessToken  String
+  refreshToken String?
+  expiresAt    DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("social_accounts")
+}
+
+enum UserRole {
+  CONTENT_CREATOR
+  APPROVER
+  ADMIN
+}
+
+enum PostStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  SCHEDULED
+  PUBLISHED
+  REJECTED
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum Platform {
+  FACEBOOK
+  INSTAGRAM
+  TWITTER
+  TIKTOK
+} 
