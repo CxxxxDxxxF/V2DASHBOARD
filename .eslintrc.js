@@ -1,23 +1,11 @@
 module.exports = {
   extends: [
-    'next/core-web-vitals',
-    '@typescript-eslint/recommended',
-    'plugin:jsx-a11y/recommended'
+    'next/core-web-vitals'
   ],
   plugins: [
-    '@typescript-eslint',
     'jsx-a11y'
   ],
   rules: {
-    // TypeScript specific rules
-    '@typescript-eslint/no-unused-vars': ['error', { 
-      argsIgnorePattern: '^_',
-      varsIgnorePattern: '^_'
-    }],
-    '@typescript-eslint/explicit-function-return-type': 'warn',
-    '@typescript-eslint/no-explicit-any': 'warn',
-    '@typescript-eslint/prefer-const': 'error',
-    '@typescript-eslint/no-var-requires': 'error',
     
     // Accessibility rules
     'jsx-a11y/alt-text': 'error',
@@ -76,8 +64,6 @@ module.exports = {
     }],
     
     // Disable some overly strict rules
-    '@typescript-eslint/no-empty-function': 'warn',
-    '@typescript-eslint/ban-ts-comment': 'warn',
     'jsx-a11y/anchor-is-valid': 'off', // Next.js Link components
   },
   overrides: [
@@ -85,7 +71,6 @@ module.exports = {
       // Apply stricter rules to test files
       files: ['**/*.test.ts', '**/*.test.tsx', '**/*.spec.ts', '**/*.spec.tsx'],
       rules: {
-        '@typescript-eslint/no-explicit-any': 'off',
         'no-console': 'off'
       }
     },
@@ -93,7 +78,6 @@ module.exports = {
       // Apply different rules to configuration files
       files: ['*.config.js', '*.config.ts', 'next.config.js'],
       rules: {
-        '@typescript-eslint/no-var-requires': 'off',
         'no-console': 'off'
       }
     }

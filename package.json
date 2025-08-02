@@ -9,7 +9,7 @@
     "dev:stop": "node scripts/dev-server.js stop",
     "dev:status": "node scripts/dev-server.js status",
     "dev:restart": "npm run dev:stop && npm run dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
     "lint:fix": "next lint --fix",
