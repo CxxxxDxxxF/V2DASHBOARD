@@ -1,14 +1,14 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Calendar, dateFnsLocalizer, Views, View } from 'react-big-calendar'
-import { format, parse, startOfWeek, getDay, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays } from 'date-fns'
-import { enUS } from 'date-fns/locale'
-import 'react-big-calendar/lib/css/react-big-calendar.css'
-import { PlusIcon, EyeIcon, PencilIcon, ChevronLeftIcon, ChevronRightIcon, CalendarIcon, ViewColumnsIcon, Squares2X2Icon } from '@heroicons/react/24/outline'
-import Link from 'next/link'
 import { authService } from '@/lib/authService'
+import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon, EyeIcon, PencilIcon, PlusIcon, Squares2X2Icon, ViewColumnsIcon } from '@heroicons/react/24/outline'
 import { User } from '@supabase/supabase-js'
+import { addDays, addMonths, addWeeks, format, getDay, parse, startOfWeek, subDays, subMonths, subWeeks } from 'date-fns'
+import { enUS } from 'date-fns/locale'
+import Link from 'next/link'
+import { useEffect, useState } from 'react'
+import { Calendar, dateFnsLocalizer, View, Views } from 'react-big-calendar'
+import 'react-big-calendar/lib/css/react-big-calendar.css'
 
 const locales = {
   'en-US': enUS,
@@ -30,8 +30,10 @@ interface Post {
   platforms: string[]
   scheduledAt?: Date
   publishedAt?: Date
+  createdAt: Date
   author: {
     name: string
+    email: string
   }
 }
 
@@ -42,6 +44,7 @@ export default function CalendarPage() {
   const [showModal, setShowModal] = useState(false)
   const [currentDate, setCurrentDate] = useState(new Date())
   const [currentView, setCurrentView] = useState<View>(Views.MONTH)
+  const [showPostDetails, setShowPostDetails] = useState(false)
 
   useEffect(() => {
     const getUser = async () => {
@@ -121,12 +124,30 @@ export default function CalendarPage() {
   const handleSelectEvent = (event: any) => {
     setSelectedPost(event.post)
     setShowModal(true)
+    setShowPostDetails(false) // Reset to modal view
   }
 
   const handleSelectSlot = (slotInfo: any) => {
     // Navigate to create new post with pre-filled date
     const date = format(slotInfo.start, 'yyyy-MM-dd')
     window.location.href = `/posts/new?date=${date}`
+  }
+
+  const handleEditPost = () => {
+    if (selectedPost) {
+      // Navigate to the posts page with edit mode
+      window.location.href = `/posts?edit=${selectedPost.id}`
+    }
+  }
+
+  const handleViewPostDetails = () => {
+    setShowPostDetails(true)
+  }
+
+  const handleCloseModal = () => {
+    setShowModal(false)
+    setSelectedPost(null)
+    setShowPostDetails(false)
   }
 
   const getStatusColor = (status: string) => {
@@ -336,9 +357,9 @@ export default function CalendarPage() {
           popup
           views={['month', 'week', 'day']}
           view={currentView}
-          onView={(view) => setCurrentView(view)}
+          onView={(view: View) => setCurrentView(view)}
           date={currentDate}
-          onNavigate={(date) => setCurrentDate(date)}
+          onNavigate={(date: Date) => setCurrentDate(date)}
           step={60}
           timeslots={1}
         />
@@ -347,70 +368,129 @@ export default function CalendarPage() {
       {/* Post Detail Modal */}
       {showModal && selectedPost && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-start mb-4">
-              <h3 className="text-lg font-medium text-gray-900">Post Details</h3>
+              <h3 className="text-lg font-medium text-gray-900">
+                {showPostDetails ? 'Post Details' : 'Post Summary'}
+              </h3>
               <button
-                onClick={() => setShowModal(false)}
+                onClick={handleCloseModal}
                 className="text-gray-400 hover:text-gray-600"
+                aria-label="Close modal"
               >
                 ✕
               </button>
             </div>
             
-            <div className="space-y-3">
-              <div>
-                <span className="text-sm font-medium text-gray-500">Caption:</span>
-                <p className="text-sm text-gray-900 mt-1">{selectedPost.caption}</p>
-              </div>
-              
-              <div>
-                <span className="text-sm font-medium text-gray-500">Status:</span>
-                <span className={`ml-2 px-2 py-1 text-xs rounded-full ${getStatusColor(selectedPost.status)}`}>
-                  {selectedPost.status.replace('_', ' ')}
-                </span>
-              </div>
-              
-              <div>
-                <span className="text-sm font-medium text-gray-500">Platforms:</span>
-                <p className="text-sm text-gray-900 mt-1">{getPlatformIcons(selectedPost.platforms)}</p>
-              </div>
-              
-              <div>
-                <span className="text-sm font-medium text-gray-500">Author:</span>
-                <p className="text-sm text-gray-900 mt-1">{selectedPost.author.name}</p>
-              </div>
-              
-              {selectedPost.scheduledAt && (
+            {!showPostDetails ? (
+              // Basic post summary
+              <div className="space-y-3">
                 <div>
-                  <span className="text-sm font-medium text-gray-500">Scheduled for:</span>
+                  <span className="text-sm font-medium text-gray-500">Caption:</span>
+                  <p className="text-sm text-gray-900 mt-1 line-clamp-3">{selectedPost.caption}</p>
+                </div>
+                
+                <div>
+                  <span className="text-sm font-medium text-gray-500">Status:</span>
+                  <span className={`ml-2 px-2 py-1 text-xs rounded-full ${getStatusColor(selectedPost.status)}`}>
+                    {selectedPost.status.replace('_', ' ')}
+                  </span>
+                </div>
+                
+                <div>
+                  <span className="text-sm font-medium text-gray-500">Platforms:</span>
+                  <p className="text-sm text-gray-900 mt-1">{getPlatformIcons(selectedPost.platforms)}</p>
+                </div>
+                
+                <div>
+                  <span className="text-sm font-medium text-gray-500">Author:</span>
+                  <p className="text-sm text-gray-900 mt-1">{selectedPost.author.name}</p>
+                </div>
+                
+                {selectedPost.scheduledAt && (
+                  <div>
+                    <span className="text-sm font-medium text-gray-500">Scheduled for:</span>
+                    <p className="text-sm text-gray-900 mt-1">
+                      {format(new Date(selectedPost.scheduledAt), 'PPP p')}
+                    </p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              // Detailed post information
+              <div className="space-y-4">
+                <div>
+                  <span className="text-sm font-medium text-gray-500">Full Caption:</span>
+                  <p className="text-sm text-gray-900 mt-1 leading-relaxed">{selectedPost.caption}</p>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <span className="text-sm font-medium text-gray-500">Status:</span>
+                    <div className="mt-1">
+                      <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(selectedPost.status)}`}>
+                        {selectedPost.status.replace('_', ' ')}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <span className="text-sm font-medium text-gray-500">Platforms:</span>
+                    <p className="text-sm text-gray-900 mt-1">{getPlatformIcons(selectedPost.platforms)}</p>
+                  </div>
+                </div>
+                
+                <div>
+                  <span className="text-sm font-medium text-gray-500">Author Information:</span>
+                  <div className="mt-1 p-3 bg-gray-50 rounded-lg">
+                    <p className="text-sm text-gray-900"><strong>Name:</strong> {selectedPost.author.name}</p>
+                    <p className="text-sm text-gray-600"><strong>Email:</strong> {selectedPost.author.email}</p>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  {selectedPost.scheduledAt && (
+                    <div>
+                      <span className="text-sm font-medium text-gray-500">Scheduled Date:</span>
+                      <p className="text-sm text-gray-900 mt-1">
+                        {format(new Date(selectedPost.scheduledAt), 'PPP')}
+                      </p>
+                    </div>
+                  )}
+                  
+                  {selectedPost.publishedAt && (
+                    <div>
+                      <span className="text-sm font-medium text-gray-500">Published Date:</span>
+                      <p className="text-sm text-gray-900 mt-1">
+                        {format(new Date(selectedPost.publishedAt), 'PPP')}
+                      </p>
+                    </div>
+                  )}
+                </div>
+                
+                <div>
+                  <span className="text-sm font-medium text-gray-500">Created:</span>
                   <p className="text-sm text-gray-900 mt-1">
-                    {format(new Date(selectedPost.scheduledAt), 'PPP p')}
+                    {format(new Date(selectedPost.createdAt), 'PPP p')}
                   </p>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
             
             <div className="mt-6 flex space-x-3">
               <button
-                onClick={() => {
-                  setShowModal(false)
-                  window.location.href = `/posts/${selectedPost.id}/edit`
-                }}
+                onClick={handleEditPost}
                 className="flex-1 btn-secondary flex items-center justify-center space-x-2"
               >
                 <PencilIcon className="h-4 w-4" />
                 <span>Edit</span>
               </button>
               <button
-                onClick={() => {
-                  setShowModal(false)
-                  window.location.href = `/posts/${selectedPost.id}`
-                }}
+                onClick={handleViewPostDetails}
                 className="flex-1 btn-primary flex items-center justify-center space-x-2"
               >
                 <EyeIcon className="h-4 w-4" />
-                <span>View</span>
+                <span>{showPostDetails ? 'Show Summary' : 'View Details'}</span>
               </button>
             </div>
           </div>

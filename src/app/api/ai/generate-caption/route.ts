@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
+// Only create OpenAI client if API key is available
+const openai = process.env.OPENAI_API_KEY 
+  ? new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    })
+  : null
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,6 +17,17 @@ export async function POST(request: NextRequest) {
         { error: 'Prompt is required' },
         { status: 400 }
       )
+    }
+
+    // If OpenAI is not configured, use fallback
+    if (!openai) {
+      const enhancedCaption = `${prompt}\n\n#RutgersGolf #GolfLife #NewJerseyGolf`
+      return NextResponse.json({
+        caption: enhancedCaption,
+        platforms,
+        originalPrompt: prompt,
+        note: 'AI service not configured, using fallback enhancement'
+      })
     }
 
     // Create platform-specific prompts
